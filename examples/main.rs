@@ -69,7 +69,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands
         .spawn(SceneRoot(asset_server.load_with_settings(
-            GltfAssetLabel::Scene(0).from_asset("models/CesiumMan/CesiumMan.gltf"),
+            GltfAssetLabel::Scene(0).from_asset("models/DracoCompressed/CesiumMilkTruck.gltf"),
             |s: &mut GltfLoaderSettings| {
                 s.validate = false;
             },
@@ -97,6 +97,8 @@ impl Plugin for GltfExtensionHandlerAnimationPlugin {
     fn build(&self, app: &mut App) {
         #[cfg(target_family = "wasm")]
         bevy::tasks::block_on(async {
+            use bevy_gltf::extensions::GltfExtensionHandlers;
+
             app.world_mut()
                 .resource_mut::<GltfExtensionHandlers>()
                 .0

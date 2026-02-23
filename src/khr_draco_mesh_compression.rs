@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, u16, vec};
 
 use bevy_asset::LoadContext;
 use bevy_platform::collections::HashMap;
-use draco_decoder::{DracoDecodeConfig, MeshAttribute, decode_mesh_with_config_sync};
+use draco_decoder::{DracoDecodeConfig, MeshAttribute, decode_mesh_with_config};
 use gltf::{
     Document, Gltf, Primitive, Semantic,
     accessor::{DataType, Dimensions},
@@ -236,7 +236,14 @@ impl DracoExtension {
         json.map(Document::from_json_without_validation)
     }
 
-    pub fn decode_mesh(
+    /// Extract the encoded data slice needed for decoding.
+    /// This is useful for offloading decode to a worker.
+    pub fn get_encoded_data<'a>(&self, gltf: &Gltf, buffer_data: &'a [Vec<u8>]) -> Option<&'a [u8]> {
+        let view = gltf.views().nth(self.link.buffer_view)?;
+        Some(&buffer_data[view.buffer().index()][view.offset()..view.offset() + view.length()])
+    }
+
+    pub async fn decode_mesh(
         &self,
         gltf: &Gltf,
         buffer_data: &[Vec<u8>],
@@ -244,7 +251,7 @@ impl DracoExtension {
         let view = gltf.views().nth(self.link.buffer_view).unwrap();
         let draco_encode_slice: &[u8] =
             &buffer_data[view.buffer().index()][view.offset()..view.offset() + view.length()];
-        let result_opt = decode_mesh_with_config_sync(draco_encode_slice);
+        let result_opt = decode_mesh_with_config(draco_encode_slice).await;
 
         let Some(result) = result_opt else {
             warn!("draco decode fail!");

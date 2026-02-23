@@ -1,0 +1,23 @@
+{
+  "name": "bevy_gltf_draco",
+  "version": "0.0.1",
+  "description": "bevy gltf draco decoder plugin",
+  "keywords": [
+    "bevy",
+    "rust",
+    "draco"
+  ],
+  "homepage": "https://github.com/jiangheng90-opensource/bevy_gltf_draco#readme",
+  "bugs": {
+    "url": "https://github.com/jiangheng90-opensource/bevy_gltf_draco/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jiangheng90-opensource/bevy_gltf_draco.git"
+  },
+  "license": "MIT OR Apache-2.0",
+  "author": "jiangheng <https://github.com/jiangheng90>",
+  "scripts": {
+    "build:wasm": "node tools/wasm_build.js main --sync-assets"
+  }
+}

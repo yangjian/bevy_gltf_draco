@@ -1,3 +1,5 @@
 /target
+/examples/wasm/target
+/examples/wasm/assets
 **.DS_Store
 Cargo.lock
