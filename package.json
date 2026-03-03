@@ -18,6 +18,12 @@
   "license": "MIT OR Apache-2.0",
   "author": "jiangheng <https://github.com/jiangheng90>",
   "scripts": {
-    "build:wasm": "node tools/wasm_build.js main --sync-assets"
+    "build": "node tools/wasm_build.js main --sync-assets",
+    "serve": "npx serve examples/wasm",
+    "start": "npm run build && npm run serve"
+  },
+  "devDependencies": {
+    "serve": "^14.2.0",
+    "open": "^10.0.0"
   }
 }

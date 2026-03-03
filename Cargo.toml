@@ -30,7 +30,7 @@ gltf = { version = "1.4.0", default-features = false, features = [
     "names",
     "utils",
 ] }
-draco_decoder = { version = "0.0.25" }
+draco_decoder = { version = "0.0.26" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.140"
 tracing = { version = "0.1", default-features = false, features = ["std"] }
@@ -41,7 +41,7 @@ futures = "0.3"
 wasm-bindgen-futures = "0.4"
 
 [dev-dependencies]
-bevy = { path = "../bevy", features = ["jpeg", "bevy_animation", "webgpu"] }
+bevy = { path = "../bevy", features = ["jpeg", "bevy_animation"] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 web-sys = { version = "0.3", features = [
