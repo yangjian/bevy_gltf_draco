@@ -3,3 +3,4 @@
 /examples/wasm/assets
 **.DS_Store
 Cargo.lock
+.cargo
