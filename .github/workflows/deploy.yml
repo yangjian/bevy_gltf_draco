@@ -39,7 +39,7 @@ jobs:
         run: cargo install wasm-bindgen-cli
 
       - name: Install npm dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build WASM example
         run: npm run build
