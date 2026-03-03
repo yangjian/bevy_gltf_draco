@@ -1,4 +1,4 @@
-# Bevy glTF Draco Decoder - User Guide
+# Bevy glTF Draco Decoder
 
 A Bevy plugin that provides Draco mesh compression support for glTF loader. This extension enables loading glTF models with `KHR_draco_mesh_compression` extension in both native and WebAssembly environments.
 
@@ -46,12 +46,17 @@ fn main() {
 
 ### 2. Load Draco-Compressed glTF Models
 
-Load your glTF models as usual:
+Load your glTF models with validation disabled (required for Draco-compressed models):
 
 ```rust
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(SceneRoot(
-        asset_server.load("models/your_model.gltf")
+        asset_server.load_with_settings(
+            GltfAssetLabel::Scene(0).from_asset("models/your_model.gltf"),
+            |s: &mut GltfLoaderSettings| {
+                s.validate = false;  // Required: gltf-rs cannot validate KHR_draco_mesh_compression
+            },
+        )
     ));
 }
 ```
@@ -147,9 +152,9 @@ App::new()
     .add_plugins(GltfDracoDecoderPlugin)
 ```
 
-### Validation Settings
+### Validation Settings (Required)
 
-For models that may not pass strict validation:
+**Important**: Draco-compressed glTF models cannot pass `gltf-rs` validation. You **must** disable validation when loading:
 
 ```rust
 use bevy::gltf::GltfLoaderSettings;
@@ -158,7 +163,7 @@ commands.spawn(SceneRoot(
     asset_server.load_with_settings(
         GltfAssetLabel::Scene(0).from_asset("models/model.gltf"),
         |s: &mut GltfLoaderSettings| {
-            s.validate = false;
+            s.validate = false;  // Required for KHR_draco_mesh_compression
         },
     )
 ));
