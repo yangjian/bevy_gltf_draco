@@ -1,9 +1,7 @@
 use bevy_app::{App, Plugin};
 use bevy_asset::LoadContext;
-#[cfg(not(target_family = "wasm"))]
-use bevy_gltf::extensions::GltfExtensionHandlers;
 use bevy_gltf::{
-    extensions::GltfExtensionHandler,
+    extensions::{ErasedGltfExtensionHandler, GltfExtensionHandler, GltfExtensionHandlers},
     gltf::{Document, Gltf as JsonGltf, Primitive},
 };
 
@@ -14,9 +12,8 @@ mod khr_draco_mesh_compression;
 #[derive(Default, Clone)]
 struct GltfDracoDecoderExtensionHandler;
 
-#[async_trait::async_trait]
 impl GltfExtensionHandler for GltfDracoDecoderExtensionHandler {
-    fn dyn_clone(&self) -> Box<dyn GltfExtensionHandler> {
+    fn dyn_clone(&self) -> Box<dyn ErasedGltfExtensionHandler> {
         Box::new((*self).clone())
     }
 
@@ -24,7 +21,7 @@ impl GltfExtensionHandler for GltfDracoDecoderExtensionHandler {
         &mut self,
         load_context: &mut LoadContext<'_>,
         gltf_json: &JsonGltf,
-        gltf_primitive: &Primitive,
+        gltf_primitive: &Primitive<'_>,
         buffer_data: &[Vec<u8>],
         out_doc: &mut Option<Document>,
         out_data: &mut Option<Vec<Vec<u8>>>,
@@ -46,8 +43,6 @@ impl Plugin for GltfDracoDecoderPlugin {
     fn build(&self, app: &mut App) {
         #[cfg(target_family = "wasm")]
         bevy_tasks::block_on(async {
-            use bevy_gltf::extensions::GltfExtensionHandlers;
-
             app.world_mut()
                 .resource_mut::<GltfExtensionHandlers>()
                 .0

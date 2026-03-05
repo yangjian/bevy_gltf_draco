@@ -12,7 +12,7 @@ use bevy::{
 };
 use bevy_asset::LoadContext;
 use bevy_ecs::entity::EntityHashSet;
-use bevy_gltf::extensions::GltfExtensionHandler;
+use bevy_gltf::extensions::{ErasedGltfExtensionHandler, GltfExtensionHandler};
 use bevy_gltf_draco::GltfDracoDecoderPlugin;
 use bevy_platform::collections::HashMap;
 
@@ -156,7 +156,7 @@ struct GltfExtensionHandlerAnimation {
 }
 
 impl GltfExtensionHandler for GltfExtensionHandlerAnimation {
-    fn dyn_clone(&self) -> Box<dyn GltfExtensionHandler> {
+    fn dyn_clone(&self) -> Box<dyn ErasedGltfExtensionHandler> {
         Box::new((*self).clone())
     }
 
