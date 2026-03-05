@@ -1,7 +1,3 @@
-use std::f32::consts::{FRAC_PI_4, PI};
-
-#[cfg(not(target_family = "wasm"))]
-use bevy::gltf::extensions::GltfExtensionHandlers;
 use bevy::{
     gltf::{GltfLoaderSettings, GltfPlugin},
     light::CascadeShadowConfigBuilder,
@@ -12,9 +8,12 @@ use bevy::{
 };
 use bevy_asset::LoadContext;
 use bevy_ecs::entity::EntityHashSet;
-use bevy_gltf::extensions::{ErasedGltfExtensionHandler, GltfExtensionHandler};
+use bevy_gltf::extensions::{
+    ErasedGltfExtensionHandler, GltfExtensionHandler, GltfExtensionHandlers,
+};
 use bevy_gltf_draco::GltfDracoDecoderPlugin;
 use bevy_platform::collections::HashMap;
+use std::f32::consts::{FRAC_PI_4, PI};
 
 fn main() {
     App::new()
@@ -97,8 +96,6 @@ impl Plugin for GltfExtensionHandlerAnimationPlugin {
     fn build(&self, app: &mut App) {
         #[cfg(target_family = "wasm")]
         bevy::tasks::block_on(async {
-            use bevy_gltf::extensions::GltfExtensionHandlers;
-
             app.world_mut()
                 .resource_mut::<GltfExtensionHandlers>()
                 .0
