@@ -1,3 +1,4 @@
+use bevy::asset::RenderAssetUsages;
 use bevy::gltf::extensions::GltfExtensionHandlers;
 use bevy::gltf::gltf_ext::mesh::primitive_topology;
 use bevy::gltf::vertex_attributes::convert_attribute;
@@ -29,11 +30,22 @@ use crate::khr_draco_mesh_compression::DracoExtension;
 mod khr_draco_mesh_compression;
 
 #[derive(Default, Clone)]
-struct GltfDracoDecoderExtensionHandler;
+struct GltfDracoDecoderExtensionHandler {
+    load_meshes: RenderAssetUsages,
+    rotate_meshes: bool,
+}
 
 impl GltfExtensionHandler for GltfDracoDecoderExtensionHandler {
     fn dyn_clone(&self) -> Box<dyn ErasedGltfExtensionHandler> {
         Box::new((*self).clone())
+    }
+
+    fn on_root(&mut self, _: &mut LoadContext<'_>, _: &gltf::Gltf, settings: &GltfLoaderSettings) {
+        self.load_meshes = settings.load_meshes;
+        self.rotate_meshes = match settings.convert_coordinates {
+            Some(cc) => cc.rotate_meshes,
+            None => false,
+        }
     }
 
     async fn on_gltf_primitive(
@@ -43,12 +55,11 @@ impl GltfExtensionHandler for GltfDracoDecoderExtensionHandler {
         gltf_mesh: &gltf::Mesh<'_>,
         gltf_primitive: &Primitive<'_>,
         buffer_data: &[Vec<u8>],
-        settings: &GltfLoaderSettings,
         custom_vertex_attributes: &HashMap<Box<str>, MeshVertexAttribute>,
-        convert_coordinates: bool,
+        gltf_mesh_on_skinned_nodes: bool,
+        gltf_mesh_on_non_skinned_nodes: bool,
         user_mesh: &mut Option<Mesh>,
     ) {
-        info!("draco?");
         let Some(draco_extension) = DracoExtension::parse(load_context, gltf, gltf_primitive)
         else {
             error!("fail to make draco_extension");
@@ -77,30 +88,18 @@ impl GltfExtensionHandler for GltfDracoDecoderExtensionHandler {
             primitive: gltf_primitive.index(),
         };
 
-        let mut meshes_on_skinned_nodes = <HashSet<_>>::default();
-        let mut meshes_on_non_skinned_nodes = <HashSet<_>>::default();
-        for gltf_node in gltf.nodes() {
-            if gltf_node.skin().is_some() {
-                if let Some(mesh) = gltf_node.mesh() {
-                    meshes_on_skinned_nodes.insert(mesh.index());
-                }
-            } else if let Some(mesh) = gltf_node.mesh() {
-                meshes_on_non_skinned_nodes.insert(mesh.index());
-            }
-        }
-
-        let mut mesh = Mesh::new(primitive_topology, settings.load_meshes);
+        let mut mesh = Mesh::new(primitive_topology, self.load_meshes);
 
         // Read vertex attributes
         for (semantic, accessor) in draco_primitive.attributes() {
             if [Semantic::Joints(0), Semantic::Weights(0)].contains(&semantic) {
-                if !meshes_on_skinned_nodes.contains(&gltf_mesh.index()) {
+                if !gltf_mesh_on_skinned_nodes {
                     warn!(
                         "Ignoring attribute {:?} for skinned mesh {} used on non skinned nodes (NODE_SKINNED_MESH_WITHOUT_SKIN)",
                         semantic, primitive_label
                     );
                     continue;
-                } else if meshes_on_non_skinned_nodes.contains(&gltf_mesh.index()) {
+                } else if gltf_mesh_on_non_skinned_nodes {
                     error!(
                         "Skinned mesh {} used on both skinned and non skin nodes, this is likely to cause an error (NODE_SKINNED_MESH_WITHOUT_SKIN)",
                         primitive_label
@@ -112,7 +111,7 @@ impl GltfExtensionHandler for GltfDracoDecoderExtensionHandler {
                 accessor,
                 &decode_data,
                 custom_vertex_attributes,
-                convert_coordinates,
+                self.rotate_meshes,
             ) {
                 Ok((attribute, values)) => mesh.insert_attribute(attribute, values),
                 Err(err) => warn!("{}", err),
@@ -135,7 +134,7 @@ impl GltfExtensionHandler for GltfDracoDecoderExtensionHandler {
                 mesh.set_morph_targets(
                     morph_target_reader
                         .flat_map(|i| PrimitiveMorphAttributesIter {
-                            convert_coordinates: convert_coordinates,
+                            convert_coordinates: self.rotate_meshes,
                             positions: i.0,
                             normals: i.1,
                             tangents: i.2,
