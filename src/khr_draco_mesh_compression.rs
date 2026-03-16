@@ -1,5 +1,5 @@
-use bevy_asset::LoadContext;
-use bevy_platform::collections::HashMap;
+use bevy::asset::LoadContext;
+use bevy::platform::collections::HashMap;
 use draco_decoder::{DracoDecodeConfig, MeshAttribute, decode_mesh_with_config};
 #[cfg(target_arch = "wasm32")]
 use futures::channel::oneshot;
@@ -271,5 +271,9 @@ impl DracoExtension {
                 .flatten()
                 .map(|result| (result.config, vec![result.data]))
         }
+    }
+
+    pub fn primitive(doc: &Document) -> Primitive<'_> {
+        doc.meshes().next().unwrap().primitives().next().unwrap()
     }
 }

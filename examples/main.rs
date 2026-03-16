@@ -6,13 +6,13 @@ use bevy::{
     prelude::*,
     scene::SceneInstanceReady,
 };
-use bevy_asset::LoadContext;
-use bevy_ecs::entity::EntityHashSet;
-use bevy_gltf::extensions::{
+use bevy::asset::LoadContext;
+use bevy::ecs::entity::EntityHashSet;
+use bevy::gltf::extensions::{
     ErasedGltfExtensionHandler, GltfExtensionHandler, GltfExtensionHandlers,
 };
 use bevy_gltf_draco::GltfDracoDecoderPlugin;
-use bevy_platform::collections::HashMap;
+use bevy::platform::collections::HashMap;
 use std::f32::consts::{FRAC_PI_4, PI};
 
 fn main() {
