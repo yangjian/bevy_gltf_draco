@@ -1,18 +1,14 @@
+use bevy::asset::LoadContext;
 use bevy::gltf::extensions::GltfExtensionHandlers;
-use bevy::gltf::gltf_ext::mesh::primitive_topology;
-use bevy::gltf::vertex_attributes::convert_attribute;
-use bevy::gltf::{
-    GltfAssetLabel, GltfLoaderSettings, MorphTargetNames, PrimitiveMorphAttributesIter,
-};
+use bevy::gltf::{GltfAssetLabel, GltfLoaderSettings, preprocess_mesh};
 use bevy::mesh::MeshVertexAttribute;
 use bevy::platform::collections::HashSet;
 use bevy::{
     app::{App, Plugin},
     gltf::extensions::ErasedGltfExtensionHandler,
     log::error,
-    mesh::{Indices, Mesh},
+    mesh::Mesh,
 };
-use bevy::{asset::LoadContext, log::info};
 use bevy::{
     gltf::{
         extensions::GltfExtensionHandler,
@@ -20,9 +16,6 @@ use bevy::{
     },
     platform::collections::HashMap,
 };
-use gltf::Semantic;
-use gltf::mesh::util::ReadIndices;
-use tracing::warn;
 
 use crate::khr_draco_mesh_compression::DracoExtension;
 
@@ -46,9 +39,10 @@ impl GltfExtensionHandler for GltfDracoDecoderExtensionHandler {
         settings: &GltfLoaderSettings,
         custom_vertex_attributes: &HashMap<Box<str>, MeshVertexAttribute>,
         convert_coordinates: bool,
+        meshes_on_skinned_nodes: &HashSet<usize>,
+        meshes_on_non_skinned_nodes: &HashSet<usize>,
         user_mesh: &mut Option<Mesh>,
     ) {
-        info!("draco?");
         let Some(draco_extension) = DracoExtension::parse(load_context, gltf, gltf_primitive)
         else {
             error!("fail to make draco_extension");
@@ -69,90 +63,24 @@ impl GltfExtensionHandler for GltfDracoDecoderExtensionHandler {
 
         let draco_primitive = DracoExtension::primitive(&draco_primitive_document);
 
-        let primitive_topology = primitive_topology(draco_primitive.mode())
-            .unwrap_or_else(|err| panic!("fail to build draco primitive, error: {:?}", err));
-
         let primitive_label = GltfAssetLabel::Primitive {
             mesh: gltf_mesh.index(),
             primitive: gltf_primitive.index(),
         };
 
-        let mut meshes_on_skinned_nodes = <HashSet<_>>::default();
-        let mut meshes_on_non_skinned_nodes = <HashSet<_>>::default();
-        for gltf_node in gltf.nodes() {
-            if gltf_node.skin().is_some() {
-                if let Some(mesh) = gltf_node.mesh() {
-                    meshes_on_skinned_nodes.insert(mesh.index());
-                }
-            } else if let Some(mesh) = gltf_node.mesh() {
-                meshes_on_non_skinned_nodes.insert(mesh.index());
-            }
+        if let Ok(mesh) = preprocess_mesh(
+            gltf_mesh,
+            &draco_primitive,
+            &primitive_label,
+            settings,
+            &decode_data,
+            custom_vertex_attributes,
+            convert_coordinates,
+            meshes_on_skinned_nodes,
+            meshes_on_non_skinned_nodes,
+        ) {
+            *user_mesh = Some(mesh);
         }
-
-        let mut mesh = Mesh::new(primitive_topology, settings.load_meshes);
-
-        // Read vertex attributes
-        for (semantic, accessor) in draco_primitive.attributes() {
-            if [Semantic::Joints(0), Semantic::Weights(0)].contains(&semantic) {
-                if !meshes_on_skinned_nodes.contains(&gltf_mesh.index()) {
-                    warn!(
-                        "Ignoring attribute {:?} for skinned mesh {} used on non skinned nodes (NODE_SKINNED_MESH_WITHOUT_SKIN)",
-                        semantic, primitive_label
-                    );
-                    continue;
-                } else if meshes_on_non_skinned_nodes.contains(&gltf_mesh.index()) {
-                    error!(
-                        "Skinned mesh {} used on both skinned and non skin nodes, this is likely to cause an error (NODE_SKINNED_MESH_WITHOUT_SKIN)",
-                        primitive_label
-                    );
-                }
-            }
-            match convert_attribute(
-                semantic,
-                accessor,
-                &decode_data,
-                custom_vertex_attributes,
-                convert_coordinates,
-            ) {
-                Ok((attribute, values)) => mesh.insert_attribute(attribute, values),
-                Err(err) => warn!("{}", err),
-            }
-        }
-
-        // Read vertex indices
-        let reader = draco_primitive.reader(|buffer| Some(decode_data[buffer.index()].as_slice()));
-        if let Some(indices) = reader.read_indices() {
-            mesh.insert_indices(match indices {
-                ReadIndices::U8(is) => Indices::U16(is.map(|x| x as u16).collect()),
-                ReadIndices::U16(is) => Indices::U16(is.collect()),
-                ReadIndices::U32(is) => Indices::U32(is.collect()),
-            });
-        };
-
-        {
-            let morph_target_reader = reader.read_morph_targets();
-            if morph_target_reader.len() != 0 {
-                mesh.set_morph_targets(
-                    morph_target_reader
-                        .flat_map(|i| PrimitiveMorphAttributesIter {
-                            convert_coordinates: convert_coordinates,
-                            positions: i.0,
-                            normals: i.1,
-                            tangents: i.2,
-                        })
-                        .collect(),
-                );
-
-                let extras = gltf_mesh.extras().as_ref();
-                if let Some(names) = extras
-                    .and_then(|extras| serde_json::from_str::<MorphTargetNames>(extras.get()).ok())
-                {
-                    mesh.set_morph_target_names(names.target_names);
-                }
-            }
-        }
-
-        *user_mesh = Some(mesh);
     }
 }
 
