@@ -1,3 +1,4 @@
+use bevy::asset::LoadContext;
 use bevy::asset::RenderAssetUsages;
 use bevy::gltf::extensions::GltfExtensionHandlers;
 use bevy::gltf::gltf_ext::mesh::primitive_topology;
@@ -6,14 +7,12 @@ use bevy::gltf::{
     GltfAssetLabel, GltfLoaderSettings, MorphTargetNames, PrimitiveMorphAttributesIter,
 };
 use bevy::mesh::MeshVertexAttribute;
-use bevy::platform::collections::HashSet;
 use bevy::{
     app::{App, Plugin},
     gltf::extensions::ErasedGltfExtensionHandler,
     log::error,
     mesh::{Indices, Mesh},
 };
-use bevy::{asset::LoadContext, log::info};
 use bevy::{
     gltf::{
         extensions::GltfExtensionHandler,

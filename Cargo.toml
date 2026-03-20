@@ -10,7 +10,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bevy = { git = "https://github.com/jiangheng90/bevy", branch = "async-handler-hook-mesh" }
+bevy = { git = "https://github.com/bevyengine/bevy", branch = "main" }
 gltf = { version = "1.4.0", default-features = false, features = [
     "KHR_lights_punctual",
     "KHR_materials_transmission",
@@ -34,7 +34,7 @@ futures = "0.3"
 wasm-bindgen-futures = "0.4"
 
 [dev-dependencies]
-bevy = { git = "https://github.com/jiangheng90/bevy", branch = "async-handler-hook-mesh", features = [
+bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", features = [
     "jpeg",
     "bevy_animation"
 ] }

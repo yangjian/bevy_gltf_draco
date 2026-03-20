@@ -1,38 +1,20 @@
-use bevy::{
-    gltf::{GltfLoaderSettings, GltfPlugin},
-    light::CascadeShadowConfigBuilder,
-    mesh::{MeshVertexAttribute, VertexFormat},
-    platform::collections::HashSet,
-    prelude::*,
-    scene::SceneInstanceReady,
-};
 use bevy::asset::LoadContext;
 use bevy::ecs::entity::EntityHashSet;
 use bevy::gltf::extensions::{
     ErasedGltfExtensionHandler, GltfExtensionHandler, GltfExtensionHandlers,
 };
-use bevy_gltf_draco::GltfDracoDecoderPlugin;
 use bevy::platform::collections::HashMap;
+use bevy::{
+    gltf::GltfLoaderSettings, light::CascadeShadowConfigBuilder, platform::collections::HashSet,
+    prelude::*, scene::SceneInstanceReady,
+};
+use bevy_gltf_draco::GltfDracoDecoderPlugin;
 use std::f32::consts::{FRAC_PI_4, PI};
 
 fn main() {
     App::new()
         .add_plugins((
-            DefaultPlugins
-                .set(WindowPlugin {
-                    primary_window: Some(Window {
-                        fullsize_content_view: true,
-                        titlebar_transparent: true,
-                        titlebar_show_title: false,
-                        present_mode: bevy::window::PresentMode::AutoVsync,
-                        ..Default::default()
-                    }),
-                    ..default()
-                })
-                .set(GltfPlugin::default().add_custom_vertex_attribute(
-                    "BATCHID",
-                    MeshVertexAttribute::new("_BATCHID", 2137464976, VertexFormat::Float32),
-                )),
+            DefaultPlugins,
             GltfDracoDecoderPlugin,
             GltfExtensionHandlerAnimationPlugin,
         ))
@@ -130,15 +112,8 @@ fn play_animation_when_ready(
             continue;
         };
 
-        // Tell the animation player to start the animation and keep
-        // repeating it.
-        //
-        // If you want to try stopping and switching animations, see the
-        // `animated_mesh_control.rs` example.
         player.play(animation_to_play.index).repeat();
 
-        // Add the animation graph. This only needs to be done once to
-        // connect the animation player to the mesh.
         commands
             .entity(child)
             .insert(AnimationGraphHandle(animation_to_play.graph_handle.clone()));
@@ -157,17 +132,18 @@ impl GltfExtensionHandler for GltfExtensionHandlerAnimation {
         Box::new((*self).clone())
     }
 
-    fn on_animation(&mut self, _gltf_animation: &gltf::Animation, handle: Handle<AnimationClip>) {
-        self.clip = Some(handle.clone());
-    }
     fn on_animations_collected(
         &mut self,
         _load_context: &mut LoadContext<'_>,
-        _animations: &[Handle<AnimationClip>],
+        animations: &[Handle<AnimationClip>],
         _named_animations: &HashMap<Box<str>, Handle<AnimationClip>>,
         animation_roots: &HashSet<usize>,
     ) {
         self.animation_root_indices = animation_roots.clone();
+
+        if let Some(handle) = animations.iter().next() {
+            self.clip = Some(handle.clone());
+        }
     }
 
     fn on_gltf_node(
@@ -189,10 +165,8 @@ impl GltfExtensionHandler for GltfExtensionHandlerAnimation {
         _world_root_id: Entity,
         world: &mut World,
     ) {
-        // Create an AnimationGraph from the desired clip
         let (graph, index) = AnimationGraph::from_clip(self.clip.clone().unwrap());
-        // Store the animation graph as an asset with an arbitrary label
-        // We only have one graph, so this label will be unique
+
         let graph_handle =
             load_context.add_labeled_asset("MyAnimationGraphLabel".to_string(), graph);
 
@@ -202,7 +176,6 @@ impl GltfExtensionHandler for GltfExtensionHandlerAnimation {
             index,
         };
 
-        // Insert the `AnimationToPlay` component on the first animation root
         let mut entity = world.entity_mut(*self.animation_root_entities.iter().next().unwrap());
         entity.insert(animation_to_play);
     }

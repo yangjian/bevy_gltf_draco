@@ -12,7 +12,7 @@ use gltf::{
     },
 };
 use serde::Deserialize;
-use std::{collections::BTreeMap, u16, vec};
+use std::{collections::BTreeMap, vec};
 use tracing::warn;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_futures::spawn_local;
