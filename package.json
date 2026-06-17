@@ -20,7 +20,8 @@
   "scripts": {
     "build": "node tools/wasm_build.js main --sync-assets",
     "serve": "npx serve examples/wasm",
-    "start": "npm run build && npm run serve"
+    "start": "npm run build && npm run serve",
+    "publish": "cargo publish --allow-dirty --no-verify"
   },
   "devDependencies": {
     "serve": "^14.2.0",

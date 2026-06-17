@@ -6,11 +6,12 @@ repository = "https://github.com/jiangheng90-opensource/bevy_gltf_draco"
 homepage = "https://github.com/jiangheng90-opensource/bevy_gltf_draco"
 keywords = ["bevy", "draco", "decoder"]
 license = "MIT OR Apache-2.0"
-version = "0.1.0"
+version = "0.1.0-rc"
 edition = "2024"
+exclude = [".github/**", ".cargo/**", "assets/**", "examples/**", "target/**"]
 
 [dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "main" }
+bevy = { version = "0.19.0-rc.3" }
 gltf = { version = "1.4.0", default-features = false, features = [
     "KHR_lights_punctual",
     "KHR_materials_transmission",
@@ -34,10 +35,7 @@ futures = "0.3"
 wasm-bindgen-futures = "0.4"
 
 [dev-dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", features = [
-    "jpeg",
-    "bevy_animation"
-] }
+bevy = { version = "0.19.0-rc.3", features = ["jpeg", "bevy_animation"] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 web-sys = { version = "0.3", features = [

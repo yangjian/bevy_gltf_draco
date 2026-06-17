@@ -4,9 +4,10 @@ use bevy::gltf::extensions::{
     ErasedGltfExtensionHandler, GltfExtensionHandler, GltfExtensionHandlers,
 };
 use bevy::platform::collections::HashMap;
+use bevy::world_serialization::WorldInstanceReady;
 use bevy::{
     gltf::GltfLoaderSettings, light::CascadeShadowConfigBuilder, platform::collections::HashSet,
-    prelude::*, scene::SceneInstanceReady,
+    prelude::*,
 };
 use bevy_gltf_draco::GltfDracoDecoderPlugin;
 use std::f32::consts::{FRAC_PI_4, PI};
@@ -26,7 +27,7 @@ fn main() {
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         Camera3d::default(),
-        Transform::from_xyz(4.0, 4.0, 4.0).looking_at(Vec3::new(0.0, 1.0, 0.0), Vec3::Y),
+        Transform::from_xyz(2.0, 2.0, 2.0).looking_at(Vec3::new(0.0, 1.0, 0.0), Vec3::Y),
         EnvironmentMapLight {
             diffuse_map: asset_server.load("environment_maps/pisa_diffuse_rgb9e5_zstd.ktx2"),
             specular_map: asset_server.load("environment_maps/pisa_specular_rgb9e5_zstd.ktx2"),
@@ -49,12 +50,14 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
 
     commands
-        .spawn(SceneRoot(asset_server.load_with_settings(
-            GltfAssetLabel::Scene(0).from_asset("models/CesiumMan/CesiumMan.gltf"),
-            |s: &mut GltfLoaderSettings| {
-                s.validate = false;
-            },
-        )))
+        .spawn(WorldAssetRoot(
+            asset_server
+                .load_builder()
+                .with_settings(|s: &mut GltfLoaderSettings| {
+                    s.validate = false;
+                })
+                .load(GltfAssetLabel::Scene(0).from_asset("models/CesiumMan/CesiumMan.gltf")),
+        ))
         .observe(play_animation_when_ready);
 }
 
@@ -102,7 +105,7 @@ struct AnimationToPlay {
 }
 
 fn play_animation_when_ready(
-    scene_ready: On<SceneInstanceReady>,
+    scene_ready: On<WorldInstanceReady>,
     mut commands: Commands,
     children: Query<&Children>,
     mut players: Query<(&mut AnimationPlayer, &AnimationToPlay)>,
