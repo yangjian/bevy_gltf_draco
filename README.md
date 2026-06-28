@@ -8,6 +8,7 @@ A Bevy plugin that provides Draco mesh compression support for glTF loader. This
 - Support for both native and WASM platforms
 - Seamless integration with Bevy's glTF loader
 - Support for all standard mesh attributes (positions, normals, texture coordinates, joints, weights, etc.)
+- Morph target support for Draco-compressed meshes
 
 ## Installation
 
@@ -173,7 +174,7 @@ commands.spawn(SceneRoot(
 
 ### Extension Handler
 
-The plugin implements `GltfExtensionHandler` trait:
+The plugin implements the `GltfExtensionHandler` trait and hooks into `on_gltf_primitive`:
 
 ```rust
 #[async_trait::async_trait]
@@ -181,15 +182,20 @@ impl GltfExtensionHandler for GltfDracoDecoderExtensionHandler {
     async fn on_gltf_primitive(
         &mut self,
         load_context: &mut LoadContext<'_>,
-        gltf_json: &JsonGltf,
-        gltf_primitive: &Primitive,
+        gltf: &JsonGltf,
+        gltf_mesh: &gltf::Mesh<'_>,
+        gltf_primitive: &Primitive<'_>,
         buffer_data: &[Vec<u8>],
-        out_doc: &mut Option<Document>,
-        out_data: &mut Option<Vec<Vec<u8>>>,
+        custom_vertex_attributes: &HashMap<Box<str>, MeshVertexAttribute>,
+        gltf_mesh_on_skinned_nodes: bool,
+        gltf_mesh_on_non_skinned_nodes: bool,
+        user_mesh: &mut Option<Mesh>,
     ) {
-        // 1. Parse Draco extension from primitive
-        // 2. Decode mesh data
-        // 3. Build new glTF document with decoded data
+        // 1. Parse KHR_draco_mesh_compression extension from the primitive
+        // 2. Decode the Draco-encoded buffer via draco_decoder
+        // 3. Build a temporary glTF document describing the decoded data
+        // 4. Convert attributes and indices into a Bevy Mesh
+        // 5. Populate user_mesh so Bevy's glTF loader uses the decoded result
     }
 }
 ```
@@ -205,9 +211,11 @@ glTF Primitive with KHR_draco_mesh_compression
                     ↓
         Decode mesh via draco_decoder
                     ↓
-        Build new glTF document structure
+        Build temporary glTF document structure
                     ↓
-        Return decoded buffer + metadata
+        Convert attributes, indices and morph targets
+                    ↓
+        Populate Bevy Mesh returned to the glTF loader
 ```
 
 ## Troubleshooting

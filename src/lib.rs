@@ -28,6 +28,7 @@ use crate::khr_draco_mesh_compression::DracoExtension;
 
 mod khr_draco_mesh_compression;
 
+/// Internal handler that decodes `KHR_draco_mesh_compression` data for each glTF primitive.
 #[derive(Default, Clone)]
 struct GltfDracoDecoderExtensionHandler {
     load_meshes: RenderAssetUsages,
@@ -154,6 +155,24 @@ impl GltfExtensionHandler for GltfDracoDecoderExtensionHandler {
     }
 }
 
+/// Bevy plugin that adds runtime Draco decoding support to the glTF loader.
+///
+/// Add this plugin to your app to enable loading glTF models that use the
+/// `KHR_draco_mesh_compression` extension on both native and WebAssembly platforms.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use bevy::prelude::*;
+/// use bevy_gltf_draco::GltfDracoDecoderPlugin;
+///
+/// fn main() {
+///     App::new()
+///         .add_plugins(DefaultPlugins)
+///         .add_plugins(GltfDracoDecoderPlugin)
+///         .run();
+/// }
+/// ```
 pub struct GltfDracoDecoderPlugin;
 
 impl Plugin for GltfDracoDecoderPlugin {

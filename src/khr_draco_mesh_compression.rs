@@ -17,6 +17,7 @@ use tracing::warn;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_futures::spawn_local;
 
+/// Helper to convert a glTF attribute semantic string into a checked `Semantic`.
 pub trait SemanticCheck {
     fn checked(s: &str) -> Checked<Semantic>;
 }
@@ -52,6 +53,7 @@ impl SemanticCheck for Semantic {
     }
 }
 
+/// JSON representation of the `KHR_draco_mesh_compression` primitive extension object.
 #[derive(Debug, Deserialize, Default)]
 pub struct DracoExtensionValue {
     #[serde(rename = "bufferView")]
@@ -60,6 +62,7 @@ pub struct DracoExtensionValue {
     pub attributes: HashMap<String, usize>,
 }
 
+/// Maps Draco attribute IDs back to glTF semantics and stores the source buffer view.
 #[derive(Debug, Default)]
 pub struct DracoSemanticLink {
     pub map: BTreeMap<usize, Semantic>,
@@ -67,6 +70,7 @@ pub struct DracoSemanticLink {
 }
 
 impl DracoSemanticLink {
+    /// Builds the semantic link from a parsed extension value.
     pub fn from_extension_value(value: &DracoExtensionValue) -> Self {
         let mut id = BTreeMap::new();
         for (sematic_str, index) in &value.attributes {
@@ -79,6 +83,7 @@ impl DracoSemanticLink {
     }
 }
 
+/// Converts decoded Draco metadata into glTF accessor component types.
 pub trait GltfDataType {
     fn component_data_type(&self) -> DataType;
 }
@@ -110,11 +115,13 @@ impl GltfDataType for MeshAttribute {
     }
 }
 
+/// Internal Draco extension processor for a single glTF primitive.
 pub(crate) struct DracoExtension {
     pub(crate) link: DracoSemanticLink,
 }
 
 impl DracoExtension {
+    /// Parses the `KHR_draco_mesh_compression` extension from a primitive, if present.
     pub(crate) fn parse(
         _: &mut LoadContext,
         _: &Document,
@@ -139,6 +146,7 @@ impl DracoExtension {
         Some(DracoExtension { link })
     }
 
+    /// Builds a temporary glTF `Document` that describes the decoded Draco buffer layout.
     pub fn build_document(
         &self,
         primitive: &Primitive,
@@ -239,6 +247,10 @@ impl DracoExtension {
         json.map(Document::from_json_without_validation)
     }
 
+    /// Decodes the Draco-compressed buffer for this primitive.
+    ///
+    /// On WASM, decoding is delegated to a `spawn_local` task because JavaScript interop
+    /// types are not `Send`. The result is returned through a one-shot channel.
     pub async fn decode_mesh(
         &self,
         gltf: &Gltf,
@@ -273,6 +285,7 @@ impl DracoExtension {
         }
     }
 
+    /// Returns the single primitive contained in the temporary decoded document.
     pub fn primitive(doc: &Document) -> Primitive<'_> {
         doc.meshes().next().unwrap().primitives().next().unwrap()
     }
